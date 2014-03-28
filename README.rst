@@ -4,7 +4,7 @@ Medoids
 
 This module handles the clustering, from a general matter.
 We have a list of elements and a structure containing their distance,
-like dists[p][q] = dists[q][p] = || q - p ||:
+like ``dists[p][q] = dists[q][p] = || q - p ||``:
 
 .. code-block:: python
 
