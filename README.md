@@ -1,4 +1,0 @@
-medoids
-=======
-
-K-medoids implementation.
