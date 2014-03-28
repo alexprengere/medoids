@@ -8,11 +8,17 @@ like ``dists[p][q] = dists[q][p] = || q - p ||``:
 
 .. code-block:: python
 
+    >>> from medoids import build_dists, custom_dist
     >>> points = [1, 2, 3, 4, 5, 6, 7]
     >>> dists = build_dists(points, custom_dist)
     >>> dists
-    {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}, 2: {1: 1,...
+    {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}, 2: {1: 1, ...
 
+We just import the main functions.
+
+.. code-block:: python
+
+    >>> from medoids import k_medoids_iterspawn, k_medoids_iterall
 
 Then we have an implementation of the k-medoids algorithm:
 

@@ -49,6 +49,7 @@ def test_suite():
     }
 
     tests.addTests(doctest.DocTestSuite(MedoidsModule, optionflags=opt, extraglobs=globs))
+    tests.addTests(doctest.DocFileSuite('../README.rst', optionflags=opt))
 
 
     return unittest.TestSuite(tests)
