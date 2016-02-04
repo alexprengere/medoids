@@ -17,40 +17,36 @@ if DIRNAME == '':
     DIRNAME = '.'
 
 DIRNAME = os.path.realpath(DIRNAME)
-UPDIR   = os.path.split(DIRNAME)[0]
+UPDIR = os.path.split(DIRNAME)[0]
 
 if UPDIR not in sys.path:
     sys.path.append(UPDIR)
 
 
-import MedoidsModule
-
+import medoids
 
 
 def test_suite():
+    """Create a test suite of all doctests.
     """
-    Create a test suite of all doctests.
-    """
-
     tests = unittest.TestSuite()
 
     # Standard options for DocTests
-    opt =  (doctest.ELLIPSIS |
-            doctest.NORMALIZE_WHITESPACE |
-            doctest.REPORT_ONLY_FIRST_FAILURE |
-            doctest.IGNORE_EXCEPTION_DETAIL)
+    opt = (doctest.ELLIPSIS |
+           doctest.NORMALIZE_WHITESPACE |
+           doctest.REPORT_ONLY_FIRST_FAILURE |
+           doctest.IGNORE_EXCEPTION_DETAIL)
 
     points = [1, 2, 3, 4, 5, 6, 7]
-    dists  = MedoidsModule.buildDists(points, MedoidsModule.custom_dist)
+    dists = medoids.build_distances(points, lambda a, b: abs(b - a))
 
     globs = {
         'points': points,
-        'dists' : dists
+        'dists': dists,
     }
 
-    tests.addTests(doctest.DocTestSuite(MedoidsModule, optionflags=opt, extraglobs=globs))
+    tests.addTests(doctest.DocTestSuite(medoids, optionflags=opt, extraglobs=globs))
     tests.addTests(doctest.DocFileSuite('../README.rst', optionflags=opt))
-
 
     return unittest.TestSuite(tests)
 

@@ -8,9 +8,9 @@ like ``dists[p][q] = dists[q][p] = || q - p ||``:
 
 .. code-block:: python
 
-    >>> from medoids import build_dists, custom_dist
+    >>> from medoids import build_distances
     >>> points = [1, 2, 3, 4, 5, 6, 7]
-    >>> dists = build_dists(points, custom_dist)
+    >>> dists = build_distances(points, lambda a, b:  abs(b - a))
     >>> dists
     {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}, 2: {1: 1, ...
 

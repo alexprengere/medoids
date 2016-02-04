@@ -7,64 +7,60 @@ We have a list of elements and a structure containing their distance,
 like dists[p][q] = dists[q][p] = || q - p ||::
 
     >>> points = [1, 2, 3, 4, 5, 6, 7]
-    >>> dists = _build_distances(points, lambda a, b: abs(b - a))
+    >>> dists = build_distances(points, lambda a, b: abs(b - a))
     >>> dists
     {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}, 2: {1: 1,...
-
 
 Then we have an implementation of the k-medoids algorithm::
 
     >>> medoids, diam = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2) #doctest: +SKIP
-    -- Spawning
-    * New chosen kernels: [7, 5]
+    * New chosen kernels: [4, 7]
+    * Iteration over after 3 steps
+    * New chosen kernels: [6, 5]
     * Iteration over after 4 steps
-    * Diameter max 3.000 (1, 4) and medoids: {'m1': [2, [1, 2, 3, 4]], 'm0': [6, [5, 6, 7]]}
-    -- Spawning
-    * New chosen kernels: [1, 6]
-    * Iteration over after 2 steps
-    * Diameter max 3.000 (4, 7) and medoids: {'m1': [5, [4, 5, 6, 7]], 'm0': [2, [1, 2, 3]]}
-    -- Spawn end: best diameter 3.000, best medoids: {'m1': [2, [1, 2, 3, 4]], 'm0': [6, [5, 6, 7]]}
-    >>>
-    >>> for kernel, medoid in medoids.itervalues():
-    ...     print "%s -> %s" % (kernel, medoid) #doctest: +SKIP
-    5 -> [4, 5, 6, 7]
-    1 -> [1, 2, 3]
+    -- Spawn end: best diameter 3.000, best medoids: [Medoid(2, [1, 2, 3, 4]), Medoid(6, [5, 6, 7])]
 
 And a version which increases automatically the number of clusters till
 we have homogeneous clusters::
 
     >>> medoids, diam = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=2) #doctest: +SKIP
-    -- Spawning
-    * New chosen kernels: [1]
+    * New chosen kernels: [6]
     * Iteration over after 2 steps
-    * Diameter max 6.000 (1, 7) and medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
-    -- Spawning
-    * New chosen kernels: [4]
-    * Iteration over after 1 steps
-    * Diameter max 6.000 (1, 7) and medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
-    -- Spawn end: best diameter 6.000, best medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
+    * New chosen kernels: [7]
+    * Iteration over after 2 steps
+    -- Spawn end: best diameter 6.000, best medoids: [Medoid(4, [1, 2, 3, 4, 5, 6, 7])]
     +++ Diameter too bad 6.000 > 3.000
     +++ Going to 2 clusters
     <BLANKLINE>
-    -- Spawning
-    * New chosen kernels: [7, 5]
-    * Iteration over after 4 steps
-    * Diameter max 3.000 (1, 4) and medoids: {'m1': [2, [1, 2, 3, 4]], 'm0': [6, [5, 6, 7]]}
-    -- Spawning
-    * New chosen kernels: [5, 1]
-    * Iteration over after 2 steps
-    * Diameter max 3.000 (4, 7) and medoids: {'m1': [2, [1, 2, 3]], 'm0': [5, [4, 5, 6, 7]]}
-    -- Spawn end: best diameter 3.000, best medoids: {'m1': [2, [1, 2, 3, 4]], 'm0': [6, [5, 6, 7]]}
+    * New chosen kernels: [2, 5]
+    * Iteration over after 1 steps
+    * New chosen kernels: [7, 3]
+    * Iteration over after 3 steps
+    -- Spawn end: best diameter 3.000, best medoids: [Medoid(2, [1, 2, 3]), Medoid(5, [4, 5, 6, 7])]
     +++ Diameter ok 3.000 ~ 3.000
     +++ Stopping, 2 clusters enough (7 points initially)
 
 """
 
+from __future__ import with_statement, print_function
+
 import random
 from operator import itemgetter
+from collections import defaultdict
 
 
-def _build_distances(points, distance):
+class Medoid(object):
+    __slots__ = ['kernel', 'elements']
+
+    def __init__(self, kernel, elements=None):
+        self.kernel = kernel
+        self.elements = [] if elements is None else elements
+
+    def __repr__(self):
+        return 'Medoid({0}, {1})'.format(self.kernel, self.elements)
+
+
+def build_distances(points, distance):
     """
     From a list of elements and a function to compute
     the distance between two of them, build the necessary structure
@@ -79,213 +75,21 @@ def _build_distances(points, distance):
 
     >>> from pprint import pprint
     >>> points = [1, 2, 3]
-    >>> pprint(_build_distances(points, lambda a, b: abs(b - a)), width=60)
+    >>> pprint(build_distances(points, lambda a, b: abs(b - a)), width=60)
     {1: {1: 0, 2: 1, 3: 2},
      2: {1: 1, 2: 0, 3: 1},
      3: {1: 2, 2: 1, 3: 0}}
     """
-    dists = {}
-
-    for p in points:
-        dists[p] = {}
-
+    dists = defaultdict(dict)
     for p in points:
         for q in points:
             dists[p][q] = distance(p, q)
             dists[q][p] = dists[p][q]
 
-    return dists
+    return dict(dists)
 
 
-def _init_kernel_and_medoids(points, k, verbose=1):
-    """Initialize kernels and medoids.
-
-    :param points:  the list of points
-    :param k:       the number of clusters
-    :param verbose: verbosity
-    :returns:       the medoids, structured as \
-        a dictionary of 'medoid name' : medoids, \
-        where a medoid is [kernel, [elements...]]
-
-    >>> _init_kernel_and_medoids([1, 2, 3], 2) #doctest: +SKIP
-    * New chosen kernels: [1, 3]
-    {'m1': [3, []], 'm0': [1, []]}
-    >>> _init_kernel_and_medoids([1, 2, 3], 4)
-    * Too much clusters, fixing with k=3
-    * New chosen kernels: ...
-    {...}
-    """
-    if k > len(points):
-        k = len(points)
-        if verbose:
-            print '* Too much clusters, fixing with k=%s' % k
-
-    kernels = random.sample(points, k)
-    if verbose:
-        print '* New chosen kernels: %s' % kernels
-
-    return dict([
-        ("m{0}".format(i), [k, []])
-        for i, k in enumerate(kernels)
-    ])
-
-
-def _reset_medoids(medoids):
-    """Reset medoids.
-
-    :param medoids: the medoids, structured as \
-        a dictionary of 'medoid name' : medoids, \
-        where a medoid is [kernel, [elements...]]
-    :returns:       None
-
-    >>> medoids = {'m1': [3, [2, 3]], 'm0': [1, [1]]}
-    >>> _reset_medoids(medoids)
-    >>> medoids
-    {'m1': [3, []], 'm0': [1, []]}
-    """
-    for m in medoids:
-        medoids[m][1] = []
-
-
-def _put_points_in_closest_medoid(points, dists, medoids, verbose=1):
-    """Put points in closest medoids.
-
-    :param points:  the list of points
-    :param dists:   the cache of distances dists[p][q] = || q - p ||
-    :param medoids: the medoids, structured as \
-        a dictionary of 'medoid name' : medoids, \
-        where a medoid is [kernel, [elements...]]
-    :param verbose: verbosity
-    :returns:       None
-
-    >>> points = [1, 2, 3]
-    >>> medoids = {'m1': [3, []], 'm0': [1, []]}
-    >>> _put_points_in_closest_medoid(points, dists, medoids, verbose=2)
-    Point 1 at dist. 0.00 of kernel 1: 1 goes in medoid [1, []]
-    Point 2 at dist. 1.00 of kernel 1: 2 goes in medoid [1, [1]]
-    Point 3 at dist. 0.00 of kernel 3: 3 goes in medoid [3, []]
-    >>> medoids
-    {'m1': [3, [3]], 'm0': [1, [1, 2]]}
-    """
-
-    for p in points:
-        dist, closest_m = min(
-             (dists[p][k], m)
-             for m, (k, el) in medoids.iteritems())
-
-        if verbose >= 2:
-            print 'Point %s at dist. %.2f of kernel %s: %s goes in medoid %s' % \
-                (p, dist, medoids[closest_m][0], p, medoids[closest_m])
-
-        medoids[closest_m][1].append(p)
-
-
-def _remove_empty_medoids(medoids, verbose=1):
-    """
-    Remove empty medoids, happens only if there are
-    points with null distances, normally duplicates.
-
-    :param medoids: the medoids, structured as \
-        a dictionary of 'medoid name' : medoids, \
-        where a medoid is [kernel, [elements...]]
-    :param verbose: verbosity
-    :returns:       None
-
-    >>> points = [1, 2, 3]
-    >>> medoids = {'m1': [3, [1, 2, 3]], 'm0': [1, []]}
-    >>> _remove_empty_medoids(medoids)
-    * Removing medoid [1, []]
-    >>> medoids
-    {'m1': [3, [1, 2, 3]]}
-    """
-    empty_medoids = []
-
-    for m, (kernel, elements) in medoids.iteritems():
-        if not elements:
-            if verbose:
-                print '* Removing medoid %s' % ([kernel, elements])
-            empty_medoids.append(m)
-
-    # This will remove all empty medoids
-    for key in empty_medoids:
-        medoids.pop(key)
-
-
-def _elect_new_kernels(dists, medoids, verbose=1):
-    """Electing new kernels for each medoid.
-
-    :param dists:   the cache of distances dists[p][q] = || q - p ||
-    :param medoids: the medoids, structured as \
-        a dictionary of 'medoid name' : medoids, \
-        where a medoid is [kernel, [elements...]]
-    :param verbose: verbosity
-    :returns:       boolean, True if there is a change \
-        in the kernel of the medoids
-
-    >>> points = [1, 2, 3]
-    >>> medoids = {'m1': [3, [2, 3]], 'm0': [1, [1]]}
-    >>> change = _elect_new_kernels(dists, medoids, verbose=2)
-    Electing new kernel 2 for medoid [3, [2, 3]]
-    Kernel 1 still best for medoid [1, [1]]
-    >>> medoids
-    {'m1': [2, [2, 3]], 'm0': [1, [1]]}
-    """
-    change = False
-
-    for m in medoids:
-        elements = medoids[m][1]
-
-        # pk = potential kernel
-        new_kernel = min(
-            (sum(dists[e][pk] for e in elements), pk)
-            for pk in elements
-        )[1]
-
-        if medoids[m][0] != new_kernel:
-            if verbose >= 2:
-                print 'Electing new kernel %s for medoid %s' % (new_kernel, medoids[m])
-
-            medoids[m][0] = new_kernel
-            change = True
-
-        else:
-            if verbose >= 2:
-                print 'Kernel %s still best for medoid %s' % (new_kernel, medoids[m])
-
-    return change
-
-
-def _compute_diameter_max(dists, medoids, verbose=1):
-    """Compute diameter max
-
-    :param dists:   the cache of distances dists[p][q] = || q - p ||
-    :param medoids: the medoids, structured as \
-        a dictionary of 'medoid name' : medoids, \
-        where a medoid is [kernel, [elements...]]
-    :param verbose: verbosity
-    :returns:       the max diameter, a tuple of \
-        (diam, couple) where couple has a distance of diameter
-
-    >>> medoids = {'m1': [2, [2, 3]], 'm0': [1, [1]]}
-    >>> diam = _compute_diameter_max(dists, medoids)
-    * Diameter max 1.000 (3, 2) and medoids: {'m1': [2, [2, 3]], 'm0': [1, [1]]}
-    >>> medoids
-    {'m1': [2, [2, 3]], 'm0': [1, [1]]}
-    """
-    diam, couple = max(
-        (dists[a][b], (a, b))
-        for kernel, elements in medoids.itervalues()
-        for a in elements
-        for b in elements
-    )
-
-    if verbose:
-        print '* Diameter max %.3f %s and medoids: %s' % (diam, couple, medoids)
-
-    return diam
-
-
-def k_medoids(points, k, dists, iteration=20, verbose=1):
+def k_medoids(points, k, dists, iteration=20, verbose=True):
     """Standard k-medoids algorithm.
 
     :param points:    the list of points
@@ -296,67 +100,53 @@ def k_medoids(points, k, dists, iteration=20, verbose=1):
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids(points, k=2, dists=dists, verbose=2) #doctest: +SKIP
-    -- Spawning
-    * New chosen kernels: [4, 6]
-    Point 1 at dist. 3.00 of kernel 4: 1 goes in medoid [4, []]
-    Point 2 at dist. 2.00 of kernel 4: 2 goes in medoid [4, [1]]
-    Point 3 at dist. 1.00 of kernel 4: 3 goes in medoid [4, [1, 2]]
-    Point 4 at dist. 0.00 of kernel 4: 4 goes in medoid [4, [1, 2, 3]]
-    Point 5 at dist. 1.00 of kernel 4: 5 goes in medoid [4, [1, 2, 3, 4]]
-    Point 6 at dist. 0.00 of kernel 6: 6 goes in medoid [6, []]
-    Point 7 at dist. 1.00 of kernel 6: 7 goes in medoid [6, [6]]
-    Electing new kernel 3 for medoid [4, [1, 2, 3, 4, 5]]
-    Kernel 6 still best for medoid [6, [6, 7]]
-    Point 1 at dist. 2.00 of kernel 3: 1 goes in medoid [3, []]
-    Point 2 at dist. 1.00 of kernel 3: 2 goes in medoid [3, [1]]
-    Point 3 at dist. 0.00 of kernel 3: 3 goes in medoid [3, [1, 2]]
-    Point 4 at dist. 1.00 of kernel 3: 4 goes in medoid [3, [1, 2, 3]]
-    Point 5 at dist. 1.00 of kernel 6: 5 goes in medoid [6, []]
-    Point 6 at dist. 0.00 of kernel 6: 6 goes in medoid [6, [5]]
-    Point 7 at dist. 1.00 of kernel 6: 7 goes in medoid [6, [5, 6]]
-    Electing new kernel 2 for medoid [3, [1, 2, 3, 4]]
-    Kernel 6 still best for medoid [6, [5, 6, 7]]
-    Point 1 at dist. 1.00 of kernel 2: 1 goes in medoid [2, []]
-    Point 2 at dist. 0.00 of kernel 2: 2 goes in medoid [2, [1]]
-    Point 3 at dist. 1.00 of kernel 2: 3 goes in medoid [2, [1, 2]]
-    Point 4 at dist. 2.00 of kernel 2: 4 goes in medoid [2, [1, 2, 3]]
-    Point 5 at dist. 1.00 of kernel 6: 5 goes in medoid [6, []]
-    Point 6 at dist. 0.00 of kernel 6: 6 goes in medoid [6, [5]]
-    Point 7 at dist. 1.00 of kernel 6: 7 goes in medoid [6, [5, 6]]
-    Kernel 2 still best for medoid [2, [1, 2, 3, 4]]
-    Kernel 6 still best for medoid [6, [5, 6, 7]]
+    >>> diam, medoids = k_medoids(points, k=2, dists=dists, verbose=True) #doctest: +SKIP
+    * New chosen kernels: [5, 6]
     * Iteration over after 3 steps
-    * Diameter max 3.000 (1, 4) and medoids: {'m0': [2, [1, 2, 3, 4]], 'm1': [6, [5, 6, 7]]}
-    >>>
-    >>> for kernel, medoid in medoids.itervalues():
-    ...     print "%s -> %s" % (kernel, medoid) #doctest: +SKIP
-    2 -> [1, 2, 3, 4]
-    6 -> [5, 6, 7]
     """
-    if verbose:
-        print '-- Spawning'
+    if k > len(points):
+        k = len(points)
 
-    medoids = _init_kernel_and_medoids(points, k, verbose=verbose)
+    # Medoids initialization
+    medoids = [Medoid(p) for p in random.sample(points, k)]
+    if verbose:
+        print('* New chosen kernels: {0}'.format([m.kernel for m in medoids]))
 
     for n in xrange(iteration):
-        # Attributing closest kernels
-        _reset_medoids(medoids)
-        _put_points_in_closest_medoid(points, dists, medoids, verbose=verbose)
-        _remove_empty_medoids(medoids, verbose=verbose)
+        # Resetting medoids
+        for m in medoids:
+            m.elements = []
 
-        # Electing new kernel for the kernel
-        change = _elect_new_kernels(dists, medoids, verbose=verbose)
+        # Putting points in closest medoids
+        for p in points:
+            closest = min(medoids, key=lambda m: dists[p][m.kernel])
+            closest.elements.append(p)
+
+        # Removing empty medoids
+        medoids = [m for m in medoids if m.elements]
+
+        # Electing new kernels for each medoids
+        change = False
+        for m in medoids:
+            center = min(m.elements, key=lambda k: sum(dists[e][k] for e in m.elements))
+            if m.kernel != center:
+                m.kernel = center
+                change = True
 
         if not change:
             if verbose:
-                print '* Iteration over after %s steps' % (1+n)
+                print('* Iteration over after {0} steps'.format(1 + n))
             break
 
-    return _compute_diameter_max(dists, medoids, verbose=verbose), medoids
+    diam = max(dists[a][b]
+               for m in medoids
+               for a in m.elements
+               for b in m.elements)
+
+    return diam, medoids
 
 
-def k_medoids_iterspawn(points, k, dists, spawn=1, iteration=20, verbose=1):
+def k_medoids_iterspawn(points, k, dists, spawn=1, iteration=20, verbose=True):
     """
     Same as k_medoids, but we iterate also
     the spawning process.
@@ -372,23 +162,13 @@ def k_medoids_iterspawn(points, k, dists, spawn=1, iteration=20, verbose=1):
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2) #doctest: +SKIP
-    -- Spawning
-    * New chosen kernels: [2, 3]
-    * Iteration over after 3 steps
-    * Diameter max 3.000 (4, 7) and medoids: {'m0': [2, [1, 2, 3]], 'm1': [5, [4, 5, 6, 7]]}
-    -- Spawning
-    * New chosen kernels: [4, 1]
-    * Iteration over after 2 steps
-    * Diameter max 4.000 (3, 7) and medoids: {'m0': [5, [3, 4, 5, 6, 7]], 'm1': [1, [1, 2]]}
-    -- Spawn end: best diameter 3.000, best medoids: {'m0': [2, [1, 2, 3]], 'm1': [5, [4, 5, 6, 7]]}
-    >>>
-    >>> for kernel, medoid in medoids.itervalues():
-    ...     print "%s -> %s" % (kernel, medoid) #doctest: +SKIP
-    2 -> [1, 2, 3]
-    5 -> [4, 5, 6, 7]
+    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2)  #doctest: +SKIP
+    * New chosen kernels: [5, 1]
+    * Iteration over after 1 steps
+    * New chosen kernels: [2, 6]
+    * Iteration over after 1 steps
+    -- Spawn end: best diameter 3.000, best medoids: [Medoid(2, [1, 2, 3, 4]), Medoid(6, [5, 6, 7])]
     """
-
     # Here the result of k_medoids function is a tuple
     # containing in the second element the diameter of the
     # biggest medoid, so the min function will return
@@ -399,15 +179,15 @@ def k_medoids_iterspawn(points, k, dists, spawn=1, iteration=20, verbose=1):
         key=itemgetter(0))
 
     if verbose:
-        print '-- Spawn end: best diameter %.3f, best medoids: %s' % (diam, medoids)
+        print('-- Spawn end: best diameter {0:.3f}, best medoids: {1}'.format(diam, medoids))
 
     return diam, medoids
 
 
-def k_medoids_iterall(points, diam_max, dists, spawn=1, iteration=20, verbose=1):
+def k_medoids_iterall(points, diam_max, dists, spawn=1, iteration=20, verbose=True):
     """
     Same as k_medoids_iterspawn, but we increase
-    the number of clusters till  we have a good enough
+    the number of clusters till we have a good enough
     similarity between paths.
 
     :param points:     the list of points
@@ -420,53 +200,29 @@ def k_medoids_iterall(points, diam_max, dists, spawn=1, iteration=20, verbose=1)
     :returns:          the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3)  #doctest: +SKIP
-    -- Spawning
+    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3) #doctest: +SKIP
+    * New chosen kernels: [4]
+    * Iteration over after 1 steps
     * New chosen kernels: [3]
     * Iteration over after 2 steps
-    * Diameter max 6.000 (1, 7) and medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
-    -- Spawning
-    * New chosen kernels: [3]
-    * Iteration over after 2 steps
-    * Diameter max 6.000 (1, 7) and medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
-    -- Spawning
     * New chosen kernels: [7]
     * Iteration over after 2 steps
-    * Diameter max 6.000 (1, 7) and medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
-    -- Spawn end: best diameter 6.000, best medoids: {'m0': [4, [1, 2, 3, 4, 5, 6, 7]]}
+    -- Spawn end: best diameter 6.000, best medoids: [Medoid(4, [1, 2, 3, 4, 5, 6, 7])]
     +++ Diameter too bad 6.000 > 3.000
     +++ Going to 2 clusters
     <BLANKLINE>
-    * New chosen kernels: [5, 4]
+    * New chosen kernels: [1, 3]
     * Iteration over after 3 steps
-    * Diameter max 3.000 (4, 7) and medoids: {'m0': [5, [4, 5, 6, 7]], 'm1': [2, [1, 2, 3]]}
-    -- Spawning
-    * New chosen kernels: [6, 1]
-    * Iteration over after 2 steps
-    * Diameter max 3.000 (4, 7) and medoids: {'m0': [5, [4, 5, 6, 7]], 'm1': [2, [1, 2, 3]]}
-    -- Spawning
-    * New chosen kernels: [4, 1]
-    * Iteration over after 2 steps
-    * Diameter max 4.000 (3, 7) and medoids: {'m0': [5, [3, 4, 5, 6, 7]], 'm1': [1, [1, 2]]}
-    -- Spawn end: best diameter 3.000, best medoids: {'m0': [5, [4, 5, 6, 7]], 'm1': [2, [1, 2, 3]]}
+    * New chosen kernels: [5, 6]
+    * Iteration over after 3 steps
+    * New chosen kernels: [7, 6]
+    * Iteration over after 4 steps
+    -- Spawn end: best diameter 3.000, best medoids: [Medoid(2, [1, 2, 3]), Medoid(5, [4, 5, 6, 7])]
     +++ Diameter ok 3.000 ~ 3.000
     +++ Stopping, 2 clusters enough (7 points initially)
-    >>>
-    >>> for kernel, medoid in medoids.itervalues():
-    ...     print "%s -> %s" % (kernel, medoid) #doctest: +SKIP
-    2 -> [1, 2, 3]
-    5 -> [4, 5, 6, 7]
-    >>>
-    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=10, verbose=0)
-    >>> diam <= 3
-    True
-    >>> len(medoids)
-    2
     """
-    verbose = int(verbose) # True -> 1, False -> 0
-
     if not points:
-        return -1, {}
+        raise ValueError('No points given!')
 
     for k, _ in enumerate(points):
         diam, medoids = k_medoids_iterspawn(points, 1 + k, dists, spawn, iteration, verbose)
@@ -474,19 +230,18 @@ def k_medoids_iterall(points, diam_max, dists, spawn=1, iteration=20, verbose=1)
             break
 
         if verbose:
-            print '+++ Diameter too bad %.3f > %.3f' % (diam, diam_max)
-            print '+++ Going to %s clusters\n' % (2 + k)
+            print('+++ Diameter too bad {0:.3f} > {1:.3f}'.format(diam, diam_max))
+            print('+++ Going to {0} clusters\n'.format(2 + k))
 
     if verbose:
-        print '+++ Diameter ok %.3f ~ %.3f' % (diam, diam_max)
-        print '+++ Stopping, %s clusters enough (%s points initially)' % (1 + k, len(points))
+        print('+++ Diameter ok {0:.3f} ~ {1:.3f}'.format(diam, diam_max))
+        print('+++ Stopping, {0} clusters enough ({1} points initially)'.format(1 + k, len(points)))
 
     return diam, medoids
 
 
 def _test():
-    """
-    When called directly, launching doctests.
+    """When called directly, launching doctests.
     """
     import doctest
 
@@ -496,7 +251,7 @@ def _test():
            #doctest.IGNORE_EXCEPTION_DETAIL)
 
     points = [1, 2, 3, 4, 5, 6, 7]
-    dists = _build_distances(points, lambda a, b: abs(b - a))
+    dists = build_distances(points, lambda a, b: abs(b - a))
 
     globs = {
         'points': points,
@@ -508,7 +263,5 @@ def _test():
                     verbose=False)
 
 
-
 if __name__ == '__main__':
     _test()
-
