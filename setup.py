@@ -21,18 +21,18 @@ with open(local('LICENSE')) as fl:
 
 
 setup(
-    name = 'Medoids',
-    version = VERSION,
-    author = 'Alex Prengère',
-    author_email = 'alexprengere@gmail.com',
-    url = 'https://github.com/alexprengere/medoids',
-    description = 'K-medoids implementation.',
-    long_description = LONG_DESCRIPTION,
-    license = LICENSE,
-    py_modules = [
-        'meoids'
+    name='Medoids',
+    version=VERSION,
+    author='Alex Prengère',
+    author_email='alexprengere@gmail.com',
+    url='https://github.com/alexprengere/medoids',
+    description='K-medoids implementation.',
+    long_description=LONG_DESCRIPTION,
+    license=LICENSE,
+    py_modules=[
+        'medoids'
     ],
-    data_files = [
+    data_files=[
         ('test', [
             'test/test_medoids.py'
         ])
