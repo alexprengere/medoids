@@ -7,7 +7,7 @@ We have a list of elements and a structure containing their distance,
 like dists[p][q] = dists[q][p] = || q - p ||::
 
     >>> points = [1, 2, 3, 4, 5, 6, 7]
-    >>> dists = build_dists(points, custom_dist)
+    >>> dists = _build_distances(points, lambda a, b: abs(b - a))
     >>> dists
     {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}, 2: {1: 1,...
 
@@ -60,53 +60,11 @@ we have homogeneous clusters::
 
 """
 
-
 import random
+from operator import itemgetter
 
 
-def draw_without_replacement(points, draw):
-    """
-    Draw different elements in points, randomly
-    and without putting back the chosen ones.
-
-    :param points:  the list of points
-    :param draw:    an integer, the number of draw we want
-    :returns:       the iterator of chosen points
-
-    >>> L = ['a', 'b', 'c']
-    >>> list(draw_without_replacement(L, 0))
-    []
-    >>> list(draw_without_replacement(L, 1))
-    ['...']
-    >>> list(draw_without_replacement(L, 2))
-    ['...', '...']
-    >>> L
-    ['a', 'b', 'c']
-    """
-
-    # That is simple :)
-    return random.sample(points, draw)
-
-
-
-def custom_dist(a, b):
-    """
-    That is a good one, example purpose.
-
-    :param a: number a
-    :param b: number b
-    :returns: absolute value of (b - a)
-
-    >>> custom_dist(2, 3)
-    1
-    >>> custom_dist(-2.5, 0)
-    2.5
-    """
-
-    return abs(b - a)
-
-
-def build_dists(points, distance):
+def _build_distances(points, distance):
     """
     From a list of elements and a function to compute
     the distance between two of them, build the necessary structure
@@ -119,9 +77,9 @@ def build_dists(points, distance):
         a dictionary of dictionary, that verifies: \
          res[a][b] = res[b][a] = distance(a, b)
 
-    >>> points = [1, 2, 3]
     >>> from pprint import pprint
-    >>> pprint(build_dists(points, custom_dist), width=60)
+    >>> points = [1, 2, 3]
+    >>> pprint(_build_distances(points, lambda a, b: abs(b - a)), width=60)
     {1: {1: 0, 2: 1, 3: 2},
      2: {1: 1, 2: 0, 3: 1},
      3: {1: 2, 2: 1, 3: 0}}
@@ -157,21 +115,18 @@ def _init_kernel_and_medoids(points, k, verbose=1):
     * New chosen kernels: ...
     {...}
     """
-
     if k > len(points):
         k = len(points)
-
         if verbose:
             print '* Too much clusters, fixing with k=%s' % k
 
-    kernels = draw_without_replacement(points, k)
-
+    kernels = random.sample(points, k)
     if verbose:
         print '* New chosen kernels: %s' % kernels
 
     return dict([
-        ("m%s" % i, [kernels[i], []])
-        for i in xrange(len(kernels))
+        ("m{0}".format(i), [k, []])
+        for i, k in enumerate(kernels)
     ])
 
 
@@ -188,7 +143,6 @@ def _reset_medoids(medoids):
     >>> medoids
     {'m1': [3, []], 'm0': [1, []]}
     """
-
     for m in medoids:
         medoids[m][1] = []
 
@@ -215,11 +169,9 @@ def _put_points_in_closest_medoid(points, dists, medoids, verbose=1):
     """
 
     for p in points:
-
         dist, closest_m = min(
              (dists[p][k], m)
-             for m, (k, el) in medoids.iteritems()
-        )
+             for m, (k, el) in medoids.iteritems())
 
         if verbose >= 2:
             print 'Point %s at dist. %.2f of kernel %s: %s goes in medoid %s' % \
@@ -246,20 +198,15 @@ def _remove_empty_medoids(medoids, verbose=1):
     >>> medoids
     {'m1': [3, [1, 2, 3]]}
     """
-
     empty_medoids = []
 
     for m, (kernel, elements) in medoids.iteritems():
-
         if not elements:
-
             if verbose:
                 print '* Removing medoid %s' % ([kernel, elements])
-
             empty_medoids.append(m)
 
-    # Dictionary, so this will
-    # remove all empty medoids indeed
+    # This will remove all empty medoids
     for key in empty_medoids:
         medoids.pop(key)
 
@@ -283,9 +230,6 @@ def _elect_new_kernels(dists, medoids, verbose=1):
     >>> medoids
     {'m1': [2, [2, 3]], 'm0': [1, [1]]}
     """
-    #
-    # Electing new kernel for the medoid
-    #
     change = False
 
     for m in medoids:
@@ -328,7 +272,6 @@ def _compute_diameter_max(dists, medoids, verbose=1):
     >>> medoids
     {'m1': [2, [2, 3]], 'm0': [1, [1]]}
     """
-
     diam, couple = max(
         (dists[a][b], (a, b))
         for kernel, elements in medoids.itervalues()
@@ -391,14 +334,12 @@ def k_medoids(points, k, dists, iteration=20, verbose=1):
     2 -> [1, 2, 3, 4]
     6 -> [5, 6, 7]
     """
-
     if verbose:
         print '-- Spawning'
 
     medoids = _init_kernel_and_medoids(points, k, verbose=verbose)
 
     for n in xrange(iteration):
-
         # Attributing closest kernels
         _reset_medoids(medoids)
         _put_points_in_closest_medoid(points, dists, medoids, verbose=verbose)
@@ -453,8 +394,9 @@ def k_medoids_iterspawn(points, k, dists, spawn=1, iteration=20, verbose=1):
     # biggest medoid, so the min function will return
     # the best medoids arrangement, in the sense that the
     # diameter max will ne minimum
-    diam, medoids = min((k_medoids(points, k, dists, iteration, verbose) for _ in xrange(spawn)),
-                        key=lambda km: km[0])
+    diam, medoids = min(
+        (k_medoids(points, k, dists, iteration, verbose) for _ in xrange(spawn)),
+        key=itemgetter(0))
 
     if verbose:
         print '-- Spawn end: best diameter %.3f, best medoids: %s' % (diam, medoids)
@@ -521,26 +463,23 @@ def k_medoids_iterall(points, diam_max, dists, spawn=1, iteration=20, verbose=1)
     >>> len(medoids)
     2
     """
-
-    # Some precautions, verbose must be an int
-    verbose = (1 if verbose else 0)
+    verbose = int(verbose) # True -> 1, False -> 0
 
     if not points:
         return -1, {}
 
-    for k in xrange(len(points)):
-        diam, medoids = k_medoids_iterspawn(points, 1+k, dists, spawn, iteration, verbose)
-
+    for k, _ in enumerate(points):
+        diam, medoids = k_medoids_iterspawn(points, 1 + k, dists, spawn, iteration, verbose)
         if diam <= diam_max:
             break
 
         if verbose:
             print '+++ Diameter too bad %.3f > %.3f' % (diam, diam_max)
-            print '+++ Going to %s clusters\n' % (2+k)
+            print '+++ Going to %s clusters\n' % (2 + k)
 
     if verbose:
         print '+++ Diameter ok %.3f ~ %.3f' % (diam, diam_max)
-        print '+++ Stopping, %s clusters enough (%s points initially)' % (1+k, len(points))
+        print '+++ Stopping, %s clusters enough (%s points initially)' % (1 + k, len(points))
 
     return diam, medoids
 
@@ -551,13 +490,13 @@ def _test():
     """
     import doctest
 
-    opt =  (doctest.ELLIPSIS |
-            doctest.NORMALIZE_WHITESPACE |
-            doctest.REPORT_ONLY_FIRST_FAILURE )
-            #doctest.IGNORE_EXCEPTION_DETAIL)
+    opt = (doctest.ELLIPSIS |
+           doctest.NORMALIZE_WHITESPACE |
+           doctest.REPORT_ONLY_FIRST_FAILURE)
+           #doctest.IGNORE_EXCEPTION_DETAIL)
 
     points = [1, 2, 3, 4, 5, 6, 7]
-    dists  = build_dists(points, custom_dist)
+    dists = _build_distances(points, lambda a, b: abs(b - a))
 
     globs = {
         'points': points,
