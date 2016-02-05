@@ -5,7 +5,7 @@
 K medoids implementation based on a matrix of distances.
 """
 
-
+#pylint: disable=undefined-loop-variable
 from __future__ import with_statement, print_function
 
 import random
@@ -13,8 +13,6 @@ from operator import itemgetter
 from collections import defaultdict
 
 MAX_ITER = int(1e3)
-
-#pylint: disable=undefined-loop-variable
 
 
 class Medoid(object):
@@ -35,7 +33,6 @@ class Medoid(object):
 
     def compute_diameter(self, dists):
         return max(dists[a][b] for a in self for b in self)
-
 
 
 def build_distances(points, distance):

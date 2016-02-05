@@ -24,7 +24,7 @@ Then we have an implementation of the k-medoids algorithm:
 
 .. code-block:: python
 
-    >>> medoids, diam = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2)
+    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2)
     * New chosen kernels: [2, 3]
     * Iteration over after 3 steps, max diameter 3
     * New chosen kernels: [1, 2]
@@ -35,7 +35,7 @@ And a version which increases automatically the number of clusters till we have 
 
 .. code-block:: python
 
-    >>> medoids, diam = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=2)
+    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3)
     * New chosen kernels: [2]
     * Iteration over after 2 steps, max diameter 6
     * New chosen kernels: [6]
