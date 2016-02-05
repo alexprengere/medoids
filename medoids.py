@@ -50,7 +50,8 @@ def build_distances(points, distance):
 
     >>> from pprint import pprint
     >>> points = [1, 2, 3]
-    >>> pprint(build_distances(points, lambda a, b: abs(b - a)), width=60)
+    >>> dists = build_distances(points, lambda a, b: abs(b - a))
+    >>> pprint(dists, width=60)
     {1: {1: 0, 2: 1, 3: 2},
      2: {1: 1, 2: 0, 3: 1},
      3: {1: 2, 2: 1, 3: 0}}
@@ -75,7 +76,7 @@ def k_medoids(points, k, dists, max_iterations=MAX_ITER, verbose=True):
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids(points, k=2, dists=dists, verbose=True)
+    >>> diam, medoids = k_medoids(points, k=2, dists=dists, verbose=True) #doctest: +SKIP
     * New chosen kernels: [6, 3]
     * Iteration over after 3 steps, max diameter 3
     """
@@ -134,7 +135,7 @@ def k_medoids_iterspawn(points, k, dists, spawn, max_iterations=MAX_ITER, verbos
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2)
+    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2) #doctest: +SKIP
     * New chosen kernels: [2, 3]
     * Iteration over after 3 steps, max diameter 3
     * New chosen kernels: [1, 2]
@@ -176,7 +177,7 @@ def k_medoids_iterall(points, dists, spawn, diam_max, max_iterations=MAX_ITER, v
     :returns:          the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3)
+    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3) #doctest: +SKIP
     * New chosen kernels: [2]
     * Iteration over after 2 steps, max diameter 6
     * New chosen kernels: [6]

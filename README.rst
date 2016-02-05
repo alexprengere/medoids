@@ -4,15 +4,22 @@ Medoids
 
 This module handles the clustering, from a general matter.
 We have a list of elements and a structure containing their distance,
-like ``dists[p][q] = dists[q][p] = || q - p ||``:
+like ``dists[p][q] = dists[q][p] = ||q - p||``:
 
 .. code-block:: python
 
     >>> from medoids import build_distances
+    >>> from pprint import pprint
     >>> points = [1, 2, 3, 4, 5, 6, 7]
-    >>> dists = build_distances(points, lambda a, b:  abs(b - a))
-    >>> dists
-    {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}, 2: {1: 1, ...
+    >>> dists = build_distances(points, lambda a, b: abs(b - a))
+    >>> pprint(dists)
+    {1: {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6},
+     2: {1: 1, 2: 0, 3: 1, 4: 2, 5: 3, 6: 4, 7: 5},
+     3: {1: 2, 2: 1, 3: 0, 4: 1, 5: 2, 6: 3, 7: 4},
+     4: {1: 3, 2: 2, 3: 1, 4: 0, 5: 1, 6: 2, 7: 3},
+     5: {1: 4, 2: 3, 3: 2, 4: 1, 5: 0, 6: 1, 7: 2},
+     6: {1: 5, 2: 4, 3: 3, 4: 2, 5: 1, 6: 0, 7: 1},
+     7: {1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1, 7: 0}}
 
 We just import the main functions.
 
@@ -24,7 +31,7 @@ Then we have an implementation of the k-medoids algorithm:
 
 .. code-block:: python
 
-    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2)
+    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2) #doctest: +SKIP
     * New chosen kernels: [2, 3]
     * Iteration over after 3 steps, max diameter 3
     * New chosen kernels: [1, 2]
@@ -35,7 +42,7 @@ And a version which increases automatically the number of clusters till we have 
 
 .. code-block:: python
 
-    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3)
+    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3) #doctest: +SKIP
     * New chosen kernels: [2]
     * Iteration over after 2 steps, max diameter 6
     * New chosen kernels: [6]
