@@ -80,6 +80,8 @@ def k_medoids(points, k, dists, max_iterations=MAX_ITER, verbose=True):
     * New chosen kernels: [6, 3]
     * Iteration over after 3 steps, max diameter 3
     """
+    if k <= 0:
+        raise ValueError('Number of medoids must be strictly positive')
     if k > len(points):
         raise ValueError('Number of medoids exceeds number of points')
 

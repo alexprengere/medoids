@@ -25,7 +25,15 @@ class MedoidsTest(unittest.TestCase):
         self.points = [1, 2, 3, 4, 5, 6, 7]
         self.dists = build_distances(self.points, lambda a, b: abs(b - a))
 
-    def test_medoids_iterspawn(self):
+    def test_medoids_iterspawn_1(self):
+        diam, _ = k_medoids_iterspawn(self.points,
+                                      k=1,
+                                      dists=self.dists,
+                                      spawn=2,
+                                      verbose=False)
+        self.assertEquals(diam, 6.)
+
+    def test_medoids_iterspawn_2(self):
         diam, _ = k_medoids_iterspawn(self.points,
                                       k=2,
                                       dists=self.dists,
@@ -33,7 +41,15 @@ class MedoidsTest(unittest.TestCase):
                                       verbose=False)
         self.assertEquals(diam, 3.)
 
-    def test_medoids_iterall(self):
+    def test_medoids_iterspawn_3(self):
+        diam, _ = k_medoids_iterspawn(self.points,
+                                      k=7,
+                                      dists=self.dists,
+                                      spawn=2,
+                                      verbose=False)
+        self.assertEquals(diam, 0.)
+
+    def test_medoids_iterall_1(self):
         diam, medoids = k_medoids_iterall(self.points,
                                           diam_max=3,
                                           dists=self.dists,
@@ -42,6 +58,14 @@ class MedoidsTest(unittest.TestCase):
         self.assertEquals(diam, 3.)
         self.assertEquals(len(medoids), 2)
 
+    def test_medoids_iterall_2(self):
+        diam, medoids = k_medoids_iterall(self.points,
+                                          diam_max=0,
+                                          dists=self.dists,
+                                          spawn=3,
+                                          verbose=False)
+        self.assertEquals(diam, 0.)
+        self.assertEquals(len(medoids), 7)
 
 
 def test_suite():
