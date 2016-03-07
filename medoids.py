@@ -8,7 +8,7 @@ K medoids implementation based on a generic distance function.
 #pylint: disable=undefined-loop-variable
 from __future__ import with_statement, print_function
 try:
-    range = xrange
+    range = xrange #pylint: disable=redefined-builtin
 except NameError:
     pass
 
@@ -39,7 +39,7 @@ class Medoid(object):
 
 
 def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose=True):
-    """Standard K-medoids algorithm.
+    """K-medoids algorithm with one spawn of medoid kernels.
 
     :param points:    the list of points
     :param k:         the number of clusters
@@ -122,10 +122,9 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
         'max_iterations': max_iterations,
         'verbose': verbose,
     }
-    # Here the result of _k_medoids_spawn_once function is a tuple
-    # containing in the second element the diameter of the
-    # biggest medoid, so the min function will return
-    # the best medoids arrangement, in the sense that the
+    # Here the result of _k_medoids_spawn_once function is a tuple containing
+    # in the second element the diameter of the biggest medoid, so the min
+    # function will return the best medoids arrangement, in the sense that the
     # diameter max will be minimum
     diameter, medoids = min((_k_medoids_spawn_once(**kw)
                              for _ in range(spawn)), key=itemgetter(0))
@@ -137,9 +136,8 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
 
 def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER, verbose=True):
     """
-    Same as k_medoids, but we increase
-    the number of clusters till we have a good enough
-    similarity between points.
+    Same as k_medoids, but we increase the number of clusters until we have a
+    good enough similarity between points.
 
     :param points:    the list of points
     :param diam_max:  the maximum diameter allowed, otherwise \
