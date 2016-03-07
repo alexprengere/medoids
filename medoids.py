@@ -107,13 +107,6 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
     :param verbose:   boolean, verbosity status
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
-
-    >>> diameter, medoids = k_medoids(points, k=2, distance=distance, spawn=2) #doctest: +SKIP
-    * New chosen kernels: [2, 3]
-    * Iteration over after 3 steps, max diameter 3
-    * New chosen kernels: [1, 2]
-    * Iteration over after 4 steps, max diameter 3
-    ~~ Spawn end: min of max diameters 3.000 for medoids: [Medoid(2, [1, 2, 3]), Medoid(5, [4, 5, 6, 7])]
     """
     kw = {
         'points': points,
@@ -148,27 +141,6 @@ def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER
     :param verbose:   verbosity
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
-
-    >>> diameter, medoids = k_medoids_auto_k(points, diam_max=3, distance=distance, spawn=3) #doctest: +SKIP
-    * New chosen kernels: [2]
-    * Iteration over after 2 steps, max diameter 6
-    * New chosen kernels: [6]
-    * Iteration over after 2 steps, max diameter 6
-    * New chosen kernels: [2]
-    * Iteration over after 2 steps, max diameter 6
-    ~~ Spawn end: min of max diameters 6.000 for medoids: [Medoid(4, [1, 2, 3, 4, 5, 6, 7])]
-    *** Diameter too big 6.000 > 3.000
-    *** Now trying 2 clusters
-
-    * New chosen kernels: [6, 2]
-    * Iteration over after 2 steps, max diameter 3
-    * New chosen kernels: [2, 6]
-    * Iteration over after 1 steps, max diameter 3
-    * New chosen kernels: [2, 1]
-    * Iteration over after 3 steps, max diameter 4
-    ~~ Spawn end: min of max diameters 3.000 for medoids: [Medoid(5, [4, 5, 6, 7]), Medoid(2, [1, 2, 3])]
-    *** Diameter ok 3.000 <= 3.000
-    *** Stopping, 2 clusters enough (7 points initially)
     """
     if not points:
         raise ValueError('No points given!')
