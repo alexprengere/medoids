@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
-K medoids implementation based on a matrix of distances.
+K medoids implementation based on a generic distance function.
 """
 
 #pylint: disable=undefined-loop-variable
 from __future__ import with_statement, print_function
+try:
+    range = xrange
+except NameError:
+    pass
 
 import random
 from operator import itemgetter
-from collections import defaultdict
 
-MAX_ITER = int(1e3)
+_MAX_ITER = int(1e3)
 
 
 class Medoid(object):
@@ -28,55 +31,25 @@ class Medoid(object):
     def __iter__(self):
         return iter(self.elements)
 
-    def compute_kernel(self, dists):
-        return min(self, key=lambda e: sum(dists[e][other] for other in self))
+    def compute_kernel(self, distance):
+        return min(self, key=lambda e: sum(distance(e, other) for other in self))
 
-    def compute_diameter(self, dists):
-        return max(dists[a][b] for a in self for b in self)
-
-
-def build_distances(points, distance):
-    """
-    From a list of elements and a function to compute
-    the distance between two of them, build the necessary structure
-    which is required to perform k-medoids.
-    This is like a cache of all distances between all points.
-
-    :param points:   the list of elements
-    :param distance: a function able to do distance(a, b) = || b - a ||
-    :returns:        the structure containing all distances, it is \
-        a dictionary of dictionary, that verifies: \
-         res[a][b] = res[b][a] = distance(a, b)
-
-    >>> from pprint import pprint
-    >>> points = [1, 2, 3]
-    >>> dists = build_distances(points, lambda a, b: abs(b - a))
-    >>> pprint(dists, width=60)
-    {1: {1: 0, 2: 1, 3: 2},
-     2: {1: 1, 2: 0, 3: 1},
-     3: {1: 2, 2: 1, 3: 0}}
-    """
-    dists = defaultdict(dict)
-    for p in points:
-        for q in points:
-            dists[p][q] = distance(p, q)
-            dists[q][p] = dists[p][q]
-
-    return dict(dists)
+    def compute_diameter(self, distance):
+        return max(distance(a, b) for a in self for b in self)
 
 
-def k_medoids(points, k, dists, max_iterations=MAX_ITER, verbose=True):
-    """Standard k-medoids algorithm.
+def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose=True):
+    """Standard K-medoids algorithm.
 
     :param points:    the list of points
     :param k:         the number of clusters
-    :param dists:     the cache of distances dists[p][q] = || q - p ||
+    :param distance:  the distance function, distance(p, q) = ||q - p||
     :param max_iterations: the maximum number of iterations
     :param verbose:   verbosity
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids(points, k=2, dists=dists, verbose=True) #doctest: +SKIP
+    >>> diameter, medoids = _k_medoids_spawn_once(points, k=2, distance=distance, verbose=True) #doctest: +SKIP
     * New chosen kernels: [6, 3]
     * Iteration over after 3 steps, max diameter 3
     """
@@ -90,14 +63,14 @@ def k_medoids(points, k, dists, max_iterations=MAX_ITER, verbose=True):
     if verbose:
         print('* New chosen kernels: {0}'.format([m.kernel for m in medoids]))
 
-    for n in xrange(1, 1 + max_iterations):
+    for n in range(1, 1 + max_iterations):
         # Resetting medoids
         for m in medoids:
             m.elements = []
 
         # Putting points in closest medoids
         for p in points:
-            closest_medoid = min(medoids, key=lambda m: dists[m.kernel][p])
+            closest_medoid = min(medoids, key=lambda m: distance(m.kernel, p))
             closest_medoid.elements.append(p)
 
         # Removing empty medoids
@@ -106,7 +79,7 @@ def k_medoids(points, k, dists, max_iterations=MAX_ITER, verbose=True):
         # Electing new kernels for each medoids
         change = False
         for m in medoids:
-            new_kernel = m.compute_kernel(dists)
+            new_kernel = m.compute_kernel(distance)
             if new_kernel != m.kernel:
                 m.kernel = new_kernel
                 change = True
@@ -114,30 +87,28 @@ def k_medoids(points, k, dists, max_iterations=MAX_ITER, verbose=True):
         if not change:
             break
 
-    diam = max(m.compute_diameter(dists) for m in medoids)
+    diameter = max(m.compute_diameter(distance) for m in medoids)
     if verbose:
-        print('* Iteration over after {0} steps, max diameter {1}'.format(n, diam))
+        print('* Iteration over after {0} steps, max diameter {1}'.format(n, diameter))
 
-    return diam, medoids
+    return diameter, medoids
 
 
-def k_medoids_iterspawn(points, k, dists, spawn, max_iterations=MAX_ITER, verbose=True):
+def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True):
     """
-    Same as k_medoids, but we iterate also
-    the spawning process.
-    We keep the minimum of the biggest diam as a
-    reference for the best spawn.
+    Same as _k_medoids_spawn_once, but we iterate also the spawning process.
+    We keep the minimum of the biggest diameter as a reference for the best spawn.
 
     :param points:    the list of points
     :param k:         the number of clusters
-    :param dists:     the cache of distances dists[p][q] = || q - p ||
+    :param distance:  the distance function, distance(p, q) = ||q - p||
     :param spawn:     the number of spawns
     :param max_iterations: the maximum number of iterations
     :param verbose:   boolean, verbosity status
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids_iterspawn(points, k=2, dists=dists, spawn=2) #doctest: +SKIP
+    >>> diameter, medoids = k_medoids(points, k=2, distance=distance, spawn=2) #doctest: +SKIP
     * New chosen kernels: [2, 3]
     * Iteration over after 3 steps, max diameter 3
     * New chosen kernels: [1, 2]
@@ -147,39 +118,40 @@ def k_medoids_iterspawn(points, k, dists, spawn, max_iterations=MAX_ITER, verbos
     kw = {
         'points': points,
         'k': k,
-        'dists': dists,
+        'distance': distance,
         'max_iterations': max_iterations,
         'verbose': verbose,
     }
-    # Here the result of k_medoids function is a tuple
+    # Here the result of _k_medoids_spawn_once function is a tuple
     # containing in the second element the diameter of the
     # biggest medoid, so the min function will return
     # the best medoids arrangement, in the sense that the
     # diameter max will be minimum
-    diam, medoids = min((k_medoids(**kw) for _ in xrange(spawn)), key=itemgetter(0))
+    diameter, medoids = min((_k_medoids_spawn_once(**kw)
+                             for _ in range(spawn)), key=itemgetter(0))
     if verbose:
-        print('~~ Spawn end: min of max diameters {0:.3f} for medoids: {1}'.format(diam, medoids))
+        print('~~ Spawn end: min of max diameters {0:.3f} for medoids: {1}'.format(diameter, medoids))
 
-    return diam, medoids
+    return diameter, medoids
 
 
-def k_medoids_iterall(points, dists, spawn, diam_max, max_iterations=MAX_ITER, verbose=True):
+def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER, verbose=True):
     """
-    Same as k_medoids_iterspawn, but we increase
+    Same as k_medoids, but we increase
     the number of clusters till we have a good enough
-    similarity between paths.
+    similarity between points.
 
-    :param points:     the list of points
-    :param diam_max: the maximum diameter allowed, otherwise \
+    :param points:    the list of points
+    :param diam_max:  the maximum diameter allowed, otherwise \
         the algorithm will start over and increment the number of clusters
-    :param dists:      the cache of distances dists[p][q] = || q - p ||
-    :param spawn:      the number of spawns
-    :param iteration:  the maximum number of iterations
-    :param verbose:    verbosity
-    :returns:          the partition, structured as \
+    :param distance:  the distance function, distance(p, q) = ||q - p||
+    :param spawn:     the number of spawns
+    :param iteration: the maximum number of iterations
+    :param verbose:   verbosity
+    :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diam, medoids = k_medoids_iterall(points, diam_max=3, dists=dists, spawn=3) #doctest: +SKIP
+    >>> diameter, medoids = k_medoids_auto_k(points, diam_max=3, distance=distance, spawn=3) #doctest: +SKIP
     * New chosen kernels: [2]
     * Iteration over after 2 steps, max diameter 6
     * New chosen kernels: [6]
@@ -204,26 +176,26 @@ def k_medoids_iterall(points, dists, spawn, diam_max, max_iterations=MAX_ITER, v
         raise ValueError('No points given!')
 
     kw = {
-        'dists': dists,
+        'distance': distance,
         'spawn': spawn,
         'max_iterations': max_iterations,
         'verbose': verbose,
     }
 
     for k, _ in enumerate(points, start=1):
-        diam, medoids = k_medoids_iterspawn(points, k, **kw)
-        if diam <= diam_max:
+        diameter, medoids = k_medoids(points, k, **kw)
+        if diameter <= diam_max:
             break
 
         if verbose:
-            print('*** Diameter too big {0:.3f} > {1:.3f}'.format(diam, diam_max))
+            print('*** Diameter too big {0:.3f} > {1:.3f}'.format(diameter, diam_max))
             print('*** Now trying {0} clusters\n'.format(k + 1))
 
     if verbose:
-        print('*** Diameter ok {0:.3f} <= {1:.3f}'.format(diam, diam_max))
+        print('*** Diameter ok {0:.3f} <= {1:.3f}'.format(diameter, diam_max))
         print('*** Stopping, {0} clusters enough ({1} points initially)'.format(k, len(points)))
 
-    return diam, medoids
+    return diameter, medoids
 
 
 def _test():
@@ -236,12 +208,9 @@ def _test():
            doctest.REPORT_ONLY_FIRST_FAILURE)
            #doctest.IGNORE_EXCEPTION_DETAIL)
 
-    points = [1, 2, 3, 4, 5, 6, 7]
-    dists = build_distances(points, lambda a, b: abs(b - a))
-
     globs = {
-        'points': points,
-        'dists' : dists
+        'points': [1, 2, 3, 4, 5, 6, 7],
+        'distance': lambda a, b: abs(b - a),
     }
 
     doctest.testmod(optionflags=opt,
