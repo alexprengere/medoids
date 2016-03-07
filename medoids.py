@@ -1,10 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-K medoids implementation based on a generic distance function.
-"""
-
 #pylint: disable=undefined-loop-variable
 from __future__ import with_statement, print_function
 try:
@@ -14,7 +10,6 @@ except NameError:
 
 import random
 from operator import itemgetter
-
 _MAX_ITER = int(1e3)
 
 
@@ -119,8 +114,7 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
     # in the second element the diameter of the biggest medoid, so the min
     # function will return the best medoids arrangement, in the sense that the
     # diameter max will be minimum
-    diameter, medoids = min((_k_medoids_spawn_once(**kw)
-                             for _ in range(spawn)), key=itemgetter(0))
+    diameter, medoids = min((_k_medoids_spawn_once(**kw) for _ in range(spawn)), key=itemgetter(0))
     if verbose:
         print('~~ Spawn end: min of max diameters {0:.3f} for medoids: {1}'.format(diameter, medoids))
 
@@ -156,7 +150,6 @@ def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER
         diameter, medoids = k_medoids(points, k, **kw)
         if diameter <= diam_max:
             break
-
         if verbose:
             print('*** Diameter too big {0:.3f} > {1:.3f}'.format(diameter, diam_max))
             print('*** Now trying {0} clusters\n'.format(k + 1))
@@ -167,26 +160,3 @@ def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER
 
     return diameter, medoids
 
-
-def _test():
-    """When called directly, launching doctests.
-    """
-    import doctest
-
-    opt = (doctest.ELLIPSIS |
-           doctest.NORMALIZE_WHITESPACE |
-           doctest.REPORT_ONLY_FIRST_FAILURE)
-           #doctest.IGNORE_EXCEPTION_DETAIL)
-
-    globs = {
-        'points': [1, 2, 3, 4, 5, 6, 7],
-        'distance': lambda a, b: abs(b - a),
-    }
-
-    doctest.testmod(optionflags=opt,
-                    extraglobs=globs,
-                    verbose=False)
-
-
-if __name__ == '__main__':
-    _test()
