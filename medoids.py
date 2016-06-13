@@ -118,8 +118,8 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
     # diameter max will be minimum
     diameter, medoids = min((_k_medoids_spawn_once(**kw) for _ in range(spawn)), key=itemgetter(0))
     if verbose:
-        print(('~~ Spawn end: min of max diameters '
-               '{0:.3f} for medoids: {1}').format(diameter, medoids))
+        print(('~~ Spawn end: min of max diameters {0:.3f} '
+               'for medoids: {1}').format(diameter, medoids))
 
     return diameter, medoids
 
