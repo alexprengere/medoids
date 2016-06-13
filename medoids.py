@@ -1,10 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#pylint: disable=undefined-loop-variable
 from __future__ import with_statement, print_function
 try:
-    range = xrange #pylint: disable=redefined-builtin
+    range = xrange
 except NameError:
     pass
 
@@ -44,7 +43,10 @@ def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
 
-    >>> diameter, medoids = _k_medoids_spawn_once(points, k=2, distance=distance, verbose=True) #doctest: +SKIP
+    >>> points = [1, 2, 3, 4, 5, 6, 7]
+    >>> def distance(a, b):
+    ...     return abs(b - a)
+    >>> diameter, medoids = _k_medoids_spawn_once(points, k=2, distance=distance) #doctest: +SKIP
     * New chosen kernels: [6, 3]
     * Iteration over after 3 steps, max diameter 3
     """
@@ -116,7 +118,8 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
     # diameter max will be minimum
     diameter, medoids = min((_k_medoids_spawn_once(**kw) for _ in range(spawn)), key=itemgetter(0))
     if verbose:
-        print('~~ Spawn end: min of max diameters {0:.3f} for medoids: {1}'.format(diameter, medoids))
+        print(('~~ Spawn end: min of max diameters '
+               '{0:.3f} for medoids: {1}').format(diameter, medoids))
 
     return diameter, medoids
 
@@ -159,4 +162,3 @@ def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER
         print('*** Stopping, {0} clusters enough ({1} points initially)'.format(k, len(points)))
 
     return diameter, medoids
-

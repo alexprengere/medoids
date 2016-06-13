@@ -8,14 +8,6 @@ This module is the main launcher for tests.
 import unittest
 import doctest
 
-import os.path as op
-import sys
-
-UPDIR = op.split(op.dirname(__file__))[0]
-if UPDIR not in sys.path:
-    sys.path.append(UPDIR)
-
-
 import medoids
 from medoids import k_medoids, k_medoids_auto_k
 
@@ -69,8 +61,7 @@ class MedoidsTest(unittest.TestCase):
 
 
 def test_suite():
-    """Create a test suite of all doctests.
-    """
+    """Create a test suite of all doctests."""
     s = unittest.TestSuite()
 
     # Standard options for DocTests
@@ -86,14 +77,12 @@ def test_suite():
 
     s.addTests(unittest.makeSuite(MedoidsTest))
     s.addTests(doctest.DocTestSuite(medoids, optionflags=opt, extraglobs=globs))
-    s.addTests(doctest.DocFileSuite('../README.rst', optionflags=opt))
+    s.addTests(doctest.DocFileSuite('./README.rst', optionflags=opt))
 
     return unittest.TestSuite(s)
 
 
 if __name__ == "__main__":
-
     # Verbosity is not available for some old unittest version
-    #unittest.main(defaultTest='test_suite', verbosity=2)
+    # unittest.main(defaultTest='test_suite', verbosity=2)
     unittest.main(defaultTest='test_suite')
-

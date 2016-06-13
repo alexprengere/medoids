@@ -8,7 +8,8 @@ and a distance function, like ``distance(p, q) = ||q - p||``:
 .. code-block:: python
 
     >>> points = [1, 2, 3, 4, 5, 6, 7]
-    >>> distance = lambda a, b: abs(b - a)
+    >>> def distance(a, b):
+    ...     return abs(b - a)
 
 Just import the main ``k_medoids`` function:
 
