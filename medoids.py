@@ -139,7 +139,8 @@ def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER
     :returns:         the partition, structured as \
         a list of [kernel of the cluster, [elements in the cluster]]
     """
-    if not points:
+    if len(points) == 0:
+        # we do not test `if not points` to keep things compatible with numpy arrays
         raise ValueError('No points given!')
 
     kw = {
