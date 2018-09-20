@@ -8,6 +8,8 @@ This module is the main launcher for tests.
 import unittest
 import doctest
 
+import numpy as np
+
 import medoids
 from medoids import k_medoids, k_medoids_auto_k
 
@@ -15,7 +17,10 @@ from medoids import k_medoids, k_medoids_auto_k
 class MedoidsTest(unittest.TestCase):
     def setUp(self):
         self.points = [1, 2, 3, 4, 5, 6, 7]
+        self.points_3d = [[1,2,3],[2,3,4],[4,5,6]]
         self.distance = lambda a, b: abs(b - a)
+        self.np_distance = lambda a, b: np.sum(np.abs(b - a))
+
 
     def test_medoids_iterspawn_1(self):
         diam, _ = k_medoids(self.points,
@@ -54,6 +59,26 @@ class MedoidsTest(unittest.TestCase):
         diam, medoids = k_medoids_auto_k(self.points,
                                          diam_max=0,
                                          distance=self.distance,
+                                         spawn=3,
+                                         verbose=False)
+        self.assertEquals(diam, 0.)
+        self.assertEquals(len(medoids), 7)
+
+    def test_medoids_with_numpy_1(self):
+        points = np.array(self.points).reshape(-1, 1)
+        diam, medoids = k_medoids_auto_k(points,
+                                         diam_max=0,
+                                         distance=self.np_distance,
+                                         spawn=3,
+                                         verbose=False)
+        self.assertEquals(diam, 0.)
+        self.assertEquals(len(medoids), 7)
+
+    def test_medoids_with_numpy_2(self):
+        points = np.array(self.points)
+        diam, medoids = k_medoids_auto_k(points,
+                                         diam_max=0,
+                                         distance=self.np_distance,
                                          spawn=3,
                                          verbose=False)
         self.assertEquals(diam, 0.)
