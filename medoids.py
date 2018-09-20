@@ -8,6 +8,7 @@ except NameError:
     pass
 
 import random
+from numbers import Number
 from operator import itemgetter
 _MAX_ITER = int(1e3)
 
@@ -56,7 +57,7 @@ def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose
         raise ValueError('Number of medoids exceeds number of points')
 
     # Medoids initialization
-    medoids = [Medoid(kernel=p) for p in random.sample(points, k)]
+    medoids = [Medoid(kernel=p) for p in random.sample(list(points), k)]
     if verbose:
         print('* New chosen kernels: {0}'.format([m.kernel for m in medoids]))
 
@@ -77,7 +78,14 @@ def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose
         change = False
         for m in medoids:
             new_kernel = m.compute_kernel(distance)
-            if new_kernel != m.kernel:
+
+            # handle comparison of numbers, python lists and numpy arrays
+            if type(m.kernel) is list or isinstance(m.kernel, Number):
+                kernels_are_equal = new_kernel == m.kernel
+            else:
+                kernels_are_equal = (new_kernel == m.kernel).all()
+
+            if not kernels_are_equal:
                 m.kernel = new_kernel
                 change = True
 
