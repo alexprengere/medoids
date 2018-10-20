@@ -17,10 +17,10 @@ from medoids import k_medoids, k_medoids_auto_k
 class MedoidsTest(unittest.TestCase):
     def setUp(self):
         self.points = [1, 2, 3, 4, 5, 6, 7]
-        self.points_3d = [[1,2,3],[2,3,4],[4,5,6]]
         self.distance = lambda a, b: abs(b - a)
-        self.np_distance = lambda a, b: np.sum(np.abs(b - a))
-
+        self.distance_np = lambda a, b: np.sum(np.abs(b - a))
+        self.equality = lambda a, b: a == b
+        self.equality_np = lambda a, b: (a == b).all()
 
     def test_medoids_iterspawn_1(self):
         diam, _ = k_medoids(self.points,
@@ -68,7 +68,8 @@ class MedoidsTest(unittest.TestCase):
         points = np.array(self.points).reshape(-1, 1)
         diam, medoids = k_medoids_auto_k(points,
                                          diam_max=0,
-                                         distance=self.np_distance,
+                                         distance=self.distance_np,
+                                         equality=self.equality_np,
                                          spawn=3,
                                          verbose=False)
         self.assertEquals(diam, 0.)
@@ -78,7 +79,8 @@ class MedoidsTest(unittest.TestCase):
         points = np.array(self.points)
         diam, medoids = k_medoids_auto_k(points,
                                          diam_max=0,
-                                         distance=self.np_distance,
+                                         distance=self.distance_np,
+                                         equality=self.equality_np,
                                          spawn=3,
                                          verbose=False)
         self.assertEquals(diam, 0.)

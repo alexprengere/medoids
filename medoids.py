@@ -8,8 +8,7 @@ except NameError:
     pass
 
 import random
-from numbers import Number
-from operator import itemgetter
+from operator import itemgetter, __eq__
 _MAX_ITER = int(1e3)
 
 
@@ -33,7 +32,10 @@ class Medoid(object):
         return max(distance(a, b) for a in self for b in self)
 
 
-def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose=True):
+def _k_medoids_spawn_once(points, k, distance,
+                          equality=__eq__,
+                          max_iterations=_MAX_ITER,
+                          verbose=True):
     """K-medoids algorithm with one spawn of medoid kernels.
 
     :param points:    the list of points
@@ -78,14 +80,7 @@ def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose
         change = False
         for m in medoids:
             new_kernel = m.compute_kernel(distance)
-
-            # handle comparison of numbers, python lists and numpy arrays
-            if type(m.kernel) is list or isinstance(m.kernel, Number):
-                kernels_are_equal = new_kernel == m.kernel
-            else:
-                kernels_are_equal = (new_kernel == m.kernel).all()
-
-            if not kernels_are_equal:
+            if not equality(new_kernel, m.kernel):
                 m.kernel = new_kernel
                 change = True
 
@@ -99,7 +94,10 @@ def _k_medoids_spawn_once(points, k, distance, max_iterations=_MAX_ITER, verbose
     return diameter, medoids
 
 
-def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True):
+def k_medoids(points, k, distance, spawn,
+              equality=__eq__,
+              max_iterations=_MAX_ITER,
+              verbose=True):
     """
     Same as _k_medoids_spawn_once, but we iterate also the spawning process.
     We keep the minimum of the biggest diameter as a reference for the best spawn.
@@ -117,6 +115,7 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
         'points': points,
         'k': k,
         'distance': distance,
+        'equality': equality,
         'max_iterations': max_iterations,
         'verbose': verbose,
     }
@@ -132,7 +131,10 @@ def k_medoids(points, k, distance, spawn, max_iterations=_MAX_ITER, verbose=True
     return diameter, medoids
 
 
-def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER, verbose=True):
+def k_medoids_auto_k(points, distance, spawn, diam_max,
+                     equality=__eq__,
+                     max_iterations=_MAX_ITER,
+                     verbose=True):
     """
     Same as k_medoids, but we increase the number of clusters until we have a
     good enough similarity between points.
@@ -153,6 +155,7 @@ def k_medoids_auto_k(points, distance, spawn, diam_max, max_iterations=_MAX_ITER
 
     kw = {
         'distance': distance,
+        'equality': equality,
         'spawn': spawn,
         'max_iterations': max_iterations,
         'verbose': verbose,
